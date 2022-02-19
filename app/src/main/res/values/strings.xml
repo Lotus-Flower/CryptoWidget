@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">BasicApp</string>
+    <string name="loading">Loading…</string>
+    <string name="widget_name">Crypto Widget</string>
+    <string name="price_format">Price: %1s USD</string>
+    <string name="price_preview">Price: 9999 USD</string>
+    <string name="ethereum">Ethereum</string>
+    <string name="ethereum_price_format_string">Current Price of ETH: %1s</string>
+</resources>
