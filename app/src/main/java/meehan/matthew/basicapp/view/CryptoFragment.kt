@@ -49,7 +49,7 @@ class CryptoFragment : Fragment(R.layout.fragment_crypto) {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val worker = PeriodicWorkRequestBuilder<ApiWorker>(30, TimeUnit.SECONDS)
+        val worker = PeriodicWorkRequestBuilder<ApiWorker>(15, TimeUnit.MINUTES)
             .setConstraints(constraints)
             .addTag("apiWorker")
             .build()

@@ -1,26 +1,22 @@
 package meehan.matthew.basicapp.widget
 
-import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.work.*
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
-import meehan.matthew.basicapp.storage.ETHEREUM_KEY
 import meehan.matthew.basicapp.R
 import meehan.matthew.basicapp.repository.CryptoRepository
+import meehan.matthew.basicapp.work.WidgetWorker
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class CryptoWidget : GlanceAppWidget() {
@@ -48,28 +44,28 @@ class CryptoWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override val glanceAppWidget: GlanceAppWidget = CryptoWidget()
 
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-        MainScope().launch {
-            repository.getStoredEthereumPrice().collect { price ->
-                val glanceId = GlanceAppWidgetManager(context).getGlanceIds(CryptoWidget::class.java).firstOrNull()
-                glanceId?.let { id ->
-                    updateAppWidgetState(
-                        context = context,
-                        definition = PreferencesGlanceStateDefinition,
-                        id
-                    ) {
-                        it.toMutablePreferences().apply {
-                            this[stringPreferencesKey(ETHEREUM_KEY)] = price.orEmpty()
-                        }
-                    }
-                    glanceAppWidget.update(context, id)
-                }
-            }
+    override fun onEnabled(context: Context?) {
+        super.onEnabled(context)
+        context?.let { nonNullContext ->
+            startWork(nonNullContext)
         }
+    }
+
+    private fun startWork(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val worker = PeriodicWorkRequestBuilder<WidgetWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .addTag("widgetWorker")
+            .build()
+
+        WorkManager.getInstance(context.applicationContext)
+            .enqueueUniquePeriodicWork(
+                "widgetWork",
+                ExistingPeriodicWorkPolicy.KEEP,
+                worker
+            )
     }
 }
